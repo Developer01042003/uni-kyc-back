@@ -1,10 +1,9 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from company.models import *
 import uuid
 
 class User(AbstractUser):
-    full_name = models.CharField(max_length=50,blank=True)
+    full_name = models.CharField(max_length=50, blank=True)
     whatsapp = models.CharField(max_length=20, blank=True)
     gender = models.CharField(max_length=10, choices=[
         ('male', 'Male'),
@@ -22,9 +21,8 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.email
-    
 
 class sharedData(models.Model):
-    user = models.ForeignKey(User,on_delete=models.CASCADE)
-    id = models.UUIDField(primary_key=True,unique=True,editable=False)
-    company = models.ForeignKey(Company,on_delete=models.CASCADE) 
+    user = models.ForeignKey('users.User', on_delete=models.CASCADE)
+    id = models.UUIDField(primary_key=True, unique=True, editable=False)
+    company = models.ForeignKey('company.Company', on_delete=models.CASCADE)

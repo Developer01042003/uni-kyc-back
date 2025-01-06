@@ -1,7 +1,7 @@
 from django.db import models
 import uuid
 from django.contrib.auth.hashers import make_password
-from users.models import User
+from django.conf import settings
 
 class Company(models.Model):
     name = models.CharField(max_length=255)
@@ -30,7 +30,7 @@ class Company(models.Model):
 
 class CompanyUser(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
