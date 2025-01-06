@@ -46,27 +46,115 @@ class CompanyViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def check_user(self, request):
-        if not request.user.is_authenticated or not hasattr(request.user, 'company') or not request.user.company.is_verified:
-            return Response({'error': 'Unauthorized'}, 
-                          status=status.HTTP_401_UNAUTHORIZED)
-        
-        email = request.data.get('email')
-        user_exists = User.objects.filter(email=email, is_verified=True).exists()
-        return Response({'exists': user_exists})
+        # Get API credentials from request
+        api_key = request.data.get('api_key')
+        api_id = request.data.get('api_id')
+        user_unique_id = request.data.get('user_unique_id')
+
+        # Validate API credentials
+        try:
+            company = Company.objects.get(api_key=api_key, api_id=api_id)
+            
+            # Check if company is verified
+            if not company.is_verified:
+                return Response({
+                    'error': 'Company is not verified',
+                    'status': False
+                }, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if user exists and is verified
+            try:
+                user = User.objects.get(unique_id=user_unique_id)
+                
+                if not user.is_verified:
+                    return Response({
+                        'error': 'User is not verified',
+                        'status': False
+                    }, status=status.HTTP_401_UNAUTHORIZED)
+
+                # Check if user is already linked to the company
+                existing_link = CompanyUser.objects.filter(
+                    company=company,
+                    user=user
+                ).exists()
+
+                if existing_link:
+                    return Response({
+                        'message': 'User is already linked to this company',
+                        'status': 'duplicate'
+                    }, status=status.HTTP_200_OK)
+
+                return Response({
+                    'message': 'User can be added to the company',
+                    'status': True
+                }, status=status.HTTP_200_OK)
+
+            except User.DoesNotExist:
+                return Response({
+                    'error': 'User not found',
+                    'status': False
+                }, status=status.HTTP_404_NOT_FOUND)
+
+        except Company.DoesNotExist:
+            return Response({
+                'error': 'Invalid API credentials',
+                'status': False
+            }, status=status.HTTP_401_UNAUTHORIZED)
 
     @action(detail=False, methods=['post'])
     def add_user(self, request):
-        if not request.user.is_authenticated or not hasattr(request.user, 'company') or not request.user.company.is_verified:
-            return Response({'error': 'Unauthorized'}, 
-                          status=status.HTTP_401_UNAUTHORIZED)
+        # Get API credentials from request
+        api_key = request.data.get('api_key')
+        api_id = request.data.get('api_id')
+        user_unique_id = request.data.get('user_unique_id')
 
+        # Validate API credentials
         try:
-            user = User.objects.get(email=request.data['email'], is_verified=True)
-            company_user = CompanyUser.objects.create(
-                company=request.user.company,
-                user=user
-            )
-            return Response(CompanyUserSerializer(company_user).data)
-        except User.DoesNotExist:
-            return Response({'error': 'User not found'}, 
-                          status=status.HTTP_404_NOT_FOUND)
+            company = Company.objects.get(api_key=api_key, api_id=api_id)
+            
+            # Check if company is verified
+            if not company.is_verified:
+                return Response({
+                    'error': 'Company is not verified'
+                }, status=status.HTTP_401_UNAUTHORIZED)
+
+            # Check if user exists and is verified
+            try:
+                user = User.objects.get(unique_id=user_unique_id)
+                
+                if not user.is_verified:
+                    return Response({
+                        'error': 'User is not verified'
+                    }, status=status.HTTP_401_UNAUTHORIZED)
+
+                # Check if user is already linked to the company
+                existing_link = CompanyUser.objects.filter(
+                    company=company,
+                    user=user
+                ).exists()
+
+                if existing_link:
+                    return Response({
+                        'error': 'User is already linked to this company'
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
+                # Create new company-user link
+                company_user = CompanyUser.objects.create(
+                    company=company,
+                    user=user
+                )
+
+                return Response({
+                    'message': 'User successfully added to company',
+                    'data': CompanyUserSerializer(company_user).data
+                }, status=status.HTTP_201_CREATED)
+
+            except User.DoesNotExist:
+                return Response({
+                    'error': 'User not found'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+        except Company.DoesNotExist:
+            return Response({
+                'error': 'Invalid API credentials'
+            }, status=status.HTTP_401_UNAUTHORIZED)

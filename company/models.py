@@ -10,8 +10,10 @@ class Company(models.Model):
     address = models.TextField()
     country = models.CharField(max_length=100)
     is_verified = models.BooleanField(default=False)
-    api_id = models.UUIDField(default=uuid.uuid4, editable=False, null=True, blank=True)
-    api_key = models.UUIDField(default=uuid.uuid4, editable=False, null=True, blank=True)
+    is_kyc_need = models.BooleanField(default=False)
+    is_unique = models.BooleanField(default=False)
+    api_id = models.UUIDField(default=uuid.uuid4, editable=False, null=True, blank=True, unique=True)
+    api_key = models.UUIDField(default=uuid.uuid4, editable=False, null=True, blank=True, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
